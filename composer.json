@@ -1,6 +1,6 @@
 {
-    "name": "pestphp/pest-plugin-template",
-    "description": "My awesome plugin",
+    "name": "pestphp/pest-plugin-ai",
+    "description": "AI verification plugin for Pest",
     "keywords": [
         "php",
         "framework",
@@ -8,7 +8,8 @@
         "unit",
         "test",
         "testing",
-        "plugin"
+        "plugin",
+        "ai"
     ],
     "license": "MIT",
     "require": {
@@ -18,14 +19,15 @@
     },
     "autoload": {
         "psr-4": {
-            "Pest\\PluginName\\": "src/"
+            "Pest\\AI\\": "src/"
         },
         "files": [
             "src/Autoload.php"
         ]
     },
     "require-dev": {
-        "pestphp/pest-dev-tools": "^4.1.0"
+        "pestphp/pest-dev-tools": "^4.1.0",
+        "pestphp/pest-plugin-type-coverage": "^4.0.3"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
@@ -36,16 +38,25 @@
             "pestphp/pest-plugin": true
         }
     },
+    "extra": {
+        "pest": {
+            "plugins": [
+                "Pest\\AI\\Plugin"
+            ]
+        }
+    },
     "scripts": {
-        "refacto": "rector",
         "lint": "pint",
-        "test:refacto": "rector --dry-run",
+        "refactor": "rector",
+        "test:type-coverage": "pest --type-coverage --min=100",
         "test:lint": "pint --test",
-        "test:types": "phpstan analyse --ansi",
         "test:unit": "pest --colors=always",
+        "test:types": "phpstan",
+        "test:refactor": "rector --dry-run",
         "test": [
-            "@test:refacto",
+            "@test:refactor",
             "@test:lint",
+            "@test:type-coverage",
             "@test:types",
             "@test:unit"
         ]
