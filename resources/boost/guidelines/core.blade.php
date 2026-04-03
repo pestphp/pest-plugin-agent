@@ -6,6 +6,7 @@
 - Use `pest --ai="<code>"` to verify that generated code actually works. Run assertions on-the-fly without creating test files.
 - Always use `pest --ai` after making code changes to confirm the changes behave as expected.
 - The `--ai` flag creates a temporary test, executes it, and cleans up automatically.
+- Always use fully qualified class names (e.g. `\App\Models\User`, `\Illuminate\Support\Facades\Mail`) since the generated test has no `use` imports.
 
 ### Browser Testing Setup
 
@@ -17,9 +18,9 @@
 ### Verifying Backend Changes
 
 - After creating or modifying models, routes, or logic, verify with `pest --ai`. Use factories to seed data within the test:
-  - `pest --ai="\$user = App\Models\User::factory()->create(); expect(\$user->exists)->toBeTrue();"`
-  - `pest --ai="\$post = App\Models\Post::factory()->create(); expect(\$post->author)->not->toBeNull();"`
-  - `pest --ai="\$user = App\Models\User::factory()->create(); \$response = \actingAs(\$user)->get('/api/users'); \$response->assertStatus(200);"`
+  - `pest --ai="\$user = \App\Models\User::factory()->create(); expect(\$user->exists)->toBeTrue();"`
+  - `pest --ai="\$post = \App\Models\Post::factory()->create(); expect(\$post->author)->not->toBeNull();"`
+  - `pest --ai="\$user = \App\Models\User::factory()->create(); \$response = \actingAs(\$user)->get('/api/users'); \$response->assertStatus(200);"`
 
 ### Verifying Frontend Changes (IMPORTANT)
 
@@ -48,7 +49,7 @@
   - `pest --ai="\visit('/')->assertScreenshotMatches();"`
 - Combine browser interactions with backend assertions to verify side effects like emails, notifications, queued jobs, or database changes.
   - **Important:** Always assert a frontend change first (e.g. `assertSee`, `assertPathIs`) to confirm the action was processed before checking backend side effects.
-  - `pest --ai="Mail::fake(); \visit('/contact')->type('email', 'test@example.com')->type('message', 'Hello')->press('Send')->assertSee('Message sent'); Mail::assertSent(App\Mail\ContactForm::class);"`
-  - `pest --ai="Notification::fake(); \visit('/register')->type('name', 'John')->type('email', 'john@example.com')->type('password', 'password')->press('Register')->assertPathIs('/dashboard'); Notification::assertSentTo(App\Models\User::first(), App\Notifications\WelcomeNotification::class);"`
-  - `pest --ai="Queue::fake(); \visit('/export')->press('Export CSV')->assertSee('Export started'); Queue::assertPushed(App\Jobs\ExportCsv::class);"`
-  - `pest --ai="\visit('/checkout')->type('card', '4242424242424242')->press('Pay')->assertSee('Transaction processed'); expect(App\Models\Order::count())->toBe(1);"`
+  - `pest --ai="\Illuminate\Support\Facades\Mail::fake(); \visit('/contact')->type('email', 'test@example.com')->type('message', 'Hello')->press('Send')->assertSee('Message sent'); \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactForm::class);"`
+  - `pest --ai="\Illuminate\Support\Facades\Notification::fake(); \visit('/register')->type('name', 'John')->type('email', 'john@example.com')->type('password', 'password')->press('Register')->assertPathIs('/dashboard'); \Illuminate\Support\Facades\Notification::assertSentTo(\App\Models\User::first(), \App\Notifications\WelcomeNotification::class);"`
+  - `pest --ai="\Illuminate\Support\Facades\Queue::fake(); \visit('/export')->press('Export CSV')->assertSee('Export started'); \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ExportCsv::class);"`
+  - `pest --ai="\visit('/checkout')->type('card', '4242424242424242')->press('Pay')->assertSee('Transaction processed'); expect(\App\Models\Order::count())->toBe(1);"`
