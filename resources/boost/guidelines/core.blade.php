@@ -1,8 +1,18 @@
+@php
+/** @var \Laravel\Boost\Install\GuidelineAssist $assist */
+@endphp
 ## Pest AI Plugin
 
 - Use `pest --ai="<code>"` to verify that generated code actually works. Run assertions on-the-fly without creating test files.
 - Always use `pest --ai` after making code changes to confirm the changes behave as expected.
 - The `--ai` flag creates a temporary test, executes it, and cleans up automatically.
+
+### Browser Testing Setup
+
+- Before using `visit()` or any browser testing, ensure Pest's Browser Plugin is installed. If it is not, recommend installing it with the following commands:
+  - `{{ $assist->composerCommand('require pestphp/pest-plugin-browser --dev') }}`
+  - `{{ $assist->nodePackageManagerCommand('install playwright@latest') }}`
+  - `npx playwright install`
 
 ### Verifying Backend Changes
 
