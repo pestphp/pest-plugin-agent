@@ -53,16 +53,17 @@ final class Plugin implements HandlesArguments, Terminable
      */
     private function resolveUses(TestSuite $testSuite): array
     {
+        $rootUses = $testSuite->tests->getUsesForPath($testSuite->rootPath);
         $basePath = $testSuite->rootPath.DIRECTORY_SEPARATOR.$testSuite->testPath.DIRECTORY_SEPARATOR;
 
         foreach (['Browser', 'Feature', 'Integration', 'Unit'] as $directory) {
             $uses = $testSuite->tests->getUsesForPath($basePath.$directory);
 
             if ($uses !== []) {
-                return [$uses, 'P\\Tests\\'.$directory];
+                return [[...$rootUses, ...$uses], 'P\\Tests\\'.$directory];
             }
         }
 
-        return [[], 'P\\Tests'];
+        return [$rootUses, 'P\\Tests'];
     }
 }
