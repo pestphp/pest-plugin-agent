@@ -18,6 +18,11 @@
   - `{{ $assist->nodePackageManagerCommand('install playwright@latest') }}`
   - `npx playwright install`
 
+### Database & RefreshDatabase
+
+- If a `pest --ai` test needs database access and fails because migrations haven't run, check `tests/Pest.php` for a commented-out `RefreshDatabase` trait (e.g. `// uses(RefreshDatabase::class)->in('Feature');`).
+- Before uncommenting it, ask the user if they are comfortable with it — only do so if the project is using an in-memory database (e.g. SQLite `:memory:`) for tests. If the project uses a persistent test database, uncommenting `RefreshDatabase` will wipe it on every run.
+
 ### Verifying Backend Changes
 
 - Use `pest --ai` to quickly confirm backend changes work. Use factories to seed data within the test:
