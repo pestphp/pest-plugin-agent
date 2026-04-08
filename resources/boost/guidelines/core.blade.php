@@ -48,45 +48,45 @@ vendor/bin/pest --ai="$user = \App\Models\User::factory()->create(); $response =
 Take screenshots to confirm the page renders correctly:
 
 ```
-vendor/bin/pest --ai="$this->visit('/')->screenshot(filename: 'homepage');"
-vendor/bin/pest --ai="$this->visit('/dashboard')->screenshot(filename: 'dashboard', fullPage: true);"
-vendor/bin/pest --ai="$this->visit('/')->screenshotElement('.hero', filename: 'hero-section');"
+vendor/bin/pest --ai="visit('/')->screenshot(filename: 'homepage');"
+vendor/bin/pest --ai="visit('/dashboard')->screenshot(filename: 'dashboard', fullPage: true);"
+vendor/bin/pest --ai="visit('/')->screenshotElement('.hero', filename: 'hero-section');"
 ```
 
 Assert page content and element state:
 
 ```
-vendor/bin/pest --ai="$this->visit('/')->assertSee('Welcome');"
-vendor/bin/pest --ai="$this->visit('/login')->assertPresent('input[name=email]');"
-vendor/bin/pest --ai="$this->visit('/')->assertVisible('.navbar');"
+vendor/bin/pest --ai="visit('/')->assertSee('Welcome');"
+vendor/bin/pest --ai="visit('/login')->assertPresent('input[name=email]');"
+vendor/bin/pest --ai="visit('/')->assertVisible('.navbar');"
 ```
 
 Test responsiveness by emulating devices:
 
 ```
-vendor/bin/pest --ai="$this->visit('/')->on()->mobile()->screenshot(filename: 'homepage-mobile');"
-vendor/bin/pest --ai="$this->visit('/')->on()->iPhone14Pro()->screenshot(filename: 'homepage-iphone14pro');"
-vendor/bin/pest --ai="$this->visit('/')->resize(375, 812)->screenshot(filename: 'homepage-375x812');"
+vendor/bin/pest --ai="visit('/')->on()->mobile()->screenshot(filename: 'homepage-mobile');"
+vendor/bin/pest --ai="visit('/')->on()->iPhone14Pro()->screenshot(filename: 'homepage-iphone14pro');"
+vendor/bin/pest --ai="visit('/')->resize(375, 812)->screenshot(filename: 'homepage-375x812');"
 ```
 
 Verify interactions work:
 
 ```
-vendor/bin/pest --ai="$this->visit('/')->click('Login')->assertPathIs('/login');"
-vendor/bin/pest --ai="$this->visit('/contact')->type('email', 'test@example.com')->press('Send')->assertSee('Message sent');"
+vendor/bin/pest --ai="visit('/')->click('Login')->assertPathIs('/login');"
+vendor/bin/pest --ai="visit('/contact')->type('email', 'test@example.com')->press('Send')->assertSee('Message sent');"
 ```
 
 Check for JavaScript errors and accessibility issues:
 
 ```
-vendor/bin/pest --ai="$this->visit('/')->assertNoJavaScriptErrors();"
-vendor/bin/pest --ai="$this->visit('/')->assertNoAccessibilityIssues();"
+vendor/bin/pest --ai="visit('/')->assertNoJavaScriptErrors();"
+vendor/bin/pest --ai="visit('/')->assertNoAccessibilityIssues();"
 ```
 
 Visual regression testing to catch unintended UI changes:
 
 ```
-vendor/bin/pest --ai="$this->visit('/')->assertScreenshotMatches();"
+vendor/bin/pest --ai="visit('/')->assertScreenshotMatches();"
 ```
 
 ### Combining Browser and Backend Assertions
@@ -95,13 +95,13 @@ vendor/bin/pest --ai="$this->visit('/')->assertScreenshotMatches();"
 - **Important:** Always assert a frontend change first (e.g. `assertSee`, `assertPathIs`) to confirm the action was processed before checking backend side effects.
 
 ```
-vendor/bin/pest --ai="\Illuminate\Support\Facades\Mail::fake(); $this->visit('/contact')->type('email', 'test@example.com')->type('message', 'Hello')->press('Send')->assertSee('Message sent'); \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactForm::class);"
+vendor/bin/pest --ai="\Illuminate\Support\Facades\Mail::fake(); visit('/contact')->type('email', 'test@example.com')->type('message', 'Hello')->press('Send')->assertSee('Message sent'); \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ContactForm::class);"
 ```
 
 ```
-vendor/bin/pest --ai="\Illuminate\Support\Facades\Notification::fake(); $this->visit('/register')->type('name', 'John')->type('email', 'john@example.com')->type('password', 'password')->press('Register')->assertPathIs('/dashboard'); \Illuminate\Support\Facades\Notification::assertSentTo(\App\Models\User::first(), \App\Notifications\WelcomeNotification::class);"
+vendor/bin/pest --ai="\Illuminate\Support\Facades\Notification::fake(); visit('/register')->type('name', 'John')->type('email', 'john@example.com')->type('password', 'password')->press('Register')->assertPathIs('/dashboard'); \Illuminate\Support\Facades\Notification::assertSentTo(\App\Models\User::first(), \App\Notifications\WelcomeNotification::class);"
 ```
 
 ```
-vendor/bin/pest --ai="$this->visit('/checkout')->type('card', '4242424242424242')->press('Pay')->assertSee('Transaction processed'); expect(\App\Models\Order::count())->toBe(1);"
+vendor/bin/pest --ai="visit('/checkout')->type('card', '4242424242424242')->press('Pay')->assertSee('Transaction processed'); expect(\App\Models\Order::count())->toBe(1);"
 ```
