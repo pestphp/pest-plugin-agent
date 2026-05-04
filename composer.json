@@ -14,9 +14,9 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "pestphp/pest": "^4.4.5",
+        "pestphp/pest": "^4.7.0",
         "pestphp/pest-plugin": "^4.0.0",
-        "laravel/pao": "^1.0"
+        "laravel/pao": "^1.0.6"
     },
     "autoload": {
         "psr-4": {
@@ -28,8 +28,8 @@
     },
     "require-dev": {
         "pestphp/pest-dev-tools": "^4.1.0",
-        "pestphp/pest-plugin-browser": "^4.3",
-        "pestphp/pest-plugin-type-coverage": "^4.0.3"
+        "pestphp/pest-plugin-browser": "^4.3.1",
+        "pestphp/pest-plugin-type-coverage": "^4.0.4"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
