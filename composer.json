@@ -16,7 +16,7 @@
         "php": "^8.3",
         "pestphp/pest": "^4.4.5",
         "pestphp/pest-plugin": "^4.0.0",
-        "nunomaduro/pao": "0.x-dev"
+        "laravel/pao": "^1.0"
     },
     "autoload": {
         "psr-4": {
