@@ -23,12 +23,14 @@ It then runs with the project's normal Pest configuration (Feature and Browser n
 
 ## Critical rules
 
+- **The snippet must be valid PHP, not natural language.** `--ai="visit '/' and check it works"` is a parse error. Translate the user's request into PHP statements (`visit('/')->assertOk();`) before invoking.
 - **Use `vendor/bin/pest`, never bare `pest`.** The bare command often is not on `PATH` and produces "command not found" instead of a real result.
 - **Fully qualify every class name:** `\App\Models\User`, `\Illuminate\Support\Facades\Mail`, `\App\Notifications\WelcomeNotification`. The generated test has no `use` statements, so unqualified names throw `Class "User" not found`.
+- **Use the documented browser API exactly.** Methods like `onMobile()` or `mobileView()` do not exist — the chain is `->on()->mobile()`, `->on()->iPhone14Pro()`, or `->resize(w, h)`. If a method is not shown in this skill, do not invent it.
 - **Do not replace real tests with `--ai`.** This is a verification probe, not a way to skip writing tests. If the behavior is worth a regression guard, write a proper test file.
 - **Do not paper over missing setup.** If a check fails because a factory, seeder, or migration is missing, stop and ask the user to add it. Do not bend `--ai` invocations into fixtures.
-- **Delete screenshots after reviewing them.** They land in the project root and clutter the repo if left behind.
-- **Quote the snippet so the shell preserves PHP syntax.** Use double quotes outside, single quotes inside, and escape `$` as `\$` so the shell does not interpolate variables.
+- **Manage screenshot churn.** Screenshots land in `tests/Browser/Screenshots/`. Delete throwaway smoke screenshots once you've eyeballed them; for design-review workflows, keep them in a gitignored folder under that directory if you'll reference them across runs.
+- **Quote the snippet so the shell preserves PHP syntax.** Use double quotes outside, single quotes inside, and escape `$` as `\$` so the shell does not interpolate variables. For snippets with JS template literals or nested quotes, write a `.php` file under `/tmp` and run `vendor/bin/pest /tmp/foo.php` instead — the `--ai` shell-quoting wall hits fast.
 
 ## Backend verification
 
@@ -52,9 +54,19 @@ Mail, notifications, and queued jobs work via the standard fakes:
 vendor/bin/pest --ai="\Illuminate\Support\Facades\Mail::fake(); \App\Models\User::factory()->create()->notify(new \App\Notifications\Welcome()); \Illuminate\Support\Facades\Notification::assertSentTo(...);"
 ```
 
+### Seeding for pages that need data
+
+The in-memory test DB starts empty on every run, so visual review of feed/list/dashboard pages will render the empty state unless you seed first. Run a seeder inline before visiting:
+
+```bash
+vendor/bin/pest --ai="\$this->seed(\Database\Seeders\DemoSeeder::class); visit('/')->screenshot(filename: 'home');"
+```
+
+If the page still looks empty after seeding, the seeder probably isn't writing to the same connection the test sees — check `phpunit.xml` for the test DB configuration.
+
 ## Frontend and browser verification
 
-Browser features come from `pestphp/pest-plugin-browser`. If `visit()` is undefined, install it first:
+Browser features come from `pestphp/pest-plugin-browser`. Full API reference: https://pestphp.com/docs/browser-testing. If `visit()` is undefined, install it first:
 
 ```bash
 composer require pestphp/pest-plugin-browser --dev
@@ -62,9 +74,24 @@ npm install playwright@latest
 npx playwright install
 ```
 
-Use relative paths in `visit()`. Pest resolves them against the app URL. Always pass a descriptive `filename:` to screenshots so the file is easy to locate (and delete) afterwards. After any Blade, Livewire, CSS, or JS change, reach for these to visually confirm the result.
+Use relative paths in `visit()`. Pest resolves them against the app URL. Always pass a descriptive `filename:` to screenshots so the file is easy to locate afterwards — without it, the file defaults to `it_verify.png` and gets overwritten on every run. After any Blade, Livewire, CSS, or JS change, reach for these to visually confirm the result.
+
+**Screenshot signature: `screenshot(bool $fullPage = true, ?string $filename = null)`.** First positional arg is `$fullPage`, not the filename. Passing a path as the first arg throws `Argument #1 ($fullPage) must be of type bool, string given`. Always use named args, and note that `fullPage: true` (the default) produces very tall captures on long pages — pass `fullPage: false` for above-the-fold review.
+
+```php
+// ✓ named args
+visit('/')->screenshot(filename: 'home');                  // → tests/Browser/Screenshots/home.png
+visit('/')->screenshot(fullPage: false, filename: 'home'); // viewport only
+
+// ✗ positional path — runtime TypeError
+visit('/')->screenshot('/tmp/home.png');
+```
+
+You cannot redirect screenshots to an arbitrary path — they always land in `tests/Browser/Screenshots/` with the given filename.
 
 ### Smoke screenshots
+
+Screenshot API reference: https://pestphp.com/docs/browser-testing#screenshot
 
 ```bash
 vendor/bin/pest --ai="visit('/')->screenshot(filename: 'homepage');"
@@ -90,11 +117,39 @@ vendor/bin/pest --ai="visit('/')->on()->iPhone14Pro()->screenshot(filename: 'hom
 vendor/bin/pest --ai="visit('/')->resize(375, 812)->screenshot(filename: 'home-375x812');"
 ```
 
+`resize()` after `on()->mobile()` overrides the device's width — pick one. Use `on()->...()` for device emulation (user agent, touch, DPR), `resize()` for raw viewport sizing.
+
 ### Interaction flows
 
 ```bash
 vendor/bin/pest --ai="visit('/')->click('Login')->assertPathIs('/login');"
 vendor/bin/pest --ai="visit('/contact')->type('email', 'test@example.com')->press('Send')->assertSee('Message sent');"
+```
+
+#### Debugging a `click()` timeout
+
+If `click()` times out, the click likely succeeded but Pest is waiting for a navigation that didn't happen — for example, a guarded route that bounced you back. Don't reach for a longer wait. Split the chain and inspect where you actually landed:
+
+```bash
+vendor/bin/pest --ai="\$page = visit('/'); \$page->click('Open dashboard'); \$page->screenshot(filename: 'after-click'); dump(\$page->script('location.href'));"
+```
+
+### Waiting for SPA / Inertia transitions
+
+For Inertia, Livewire, or other client-rendered transitions, the page may not be ready when the next assertion runs. Use the wait helpers from `HasWaitCapabilities` instead of bare assertions:
+
+```bash
+vendor/bin/pest --ai="visit('/')->click('Open dashboard')->waitForLocation('/dashboard')->assertSee('Welcome');"
+vendor/bin/pest --ai="visit('/feed')->waitForText('Latest posts')->screenshot(filename: 'feed');"
+vendor/bin/pest --ai="visit('/feed')->waitFor('[data-feed-loaded]')->screenshot(filename: 'feed');"
+```
+
+### Reading values back from the page
+
+`$page->script('<expr>')` evaluates JavaScript in the page and returns the JSON-decoded result as `mixed` — useful for debugging:
+
+```bash
+vendor/bin/pest --ai="\$page = visit('/'); dump(\$page->script('document.title')); dump(\$page->script('location.href'));"
 ```
 
 ### Health checks
@@ -137,7 +192,7 @@ If a check fails with "no such table" or similar, look in `tests/Pest.php` for a
 - **Every failure reports the test name as `verify`.** If you batch checks into one snippet, the failure will not tell you which one broke. Keep snippets focused on a single behavior.
 - **Traits cannot be added inline.** `RefreshDatabase`, `WithFaker`, and similar traits must be wired through `tests/Pest.php` `uses()`. The snippet inherits whatever is already configured.
 - **Browser tests need a reachable app.** `visit('/foo')` hits the configured app URL, so make sure `php artisan serve` (or your usual dev server) is running, or the browser plugin's built-in server is configured.
-- **Screenshots persist on failure too.** A failed assertion still leaves the PNG in the project root. Sweep them up regardless of outcome.
+- **Screenshots persist on failure too.** A failed assertion still leaves the PNG in `tests/Browser/Screenshots/`. Sweep them up regardless of outcome. Without `filename:`, they overwrite each other as `it_verify.png`.
 - **Shell escaping bites.** Backticks, `!` (in zsh history), and `$` are all interpreted before PHP sees them. Escape `$` as `\$`, avoid `!`, and prefer single quotes inside the snippet (`'foo'`) over double.
 
 ## When NOT to use
