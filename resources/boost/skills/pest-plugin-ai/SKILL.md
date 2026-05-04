@@ -23,8 +23,10 @@ It then runs with the project's normal Pest configuration (Feature and Browser n
 
 ## Critical rules
 
+- **The snippet must be valid PHP, not natural language.** `--ai="visit '/' and check it works"` is a parse error. Translate the user's request into PHP statements (`visit('/')->assertOk();`) before invoking.
 - **Use `vendor/bin/pest`, never bare `pest`.** The bare command often is not on `PATH` and produces "command not found" instead of a real result.
 - **Fully qualify every class name:** `\App\Models\User`, `\Illuminate\Support\Facades\Mail`, `\App\Notifications\WelcomeNotification`. The generated test has no `use` statements, so unqualified names throw `Class "User" not found`.
+- **Use the documented browser API exactly.** Methods like `onMobile()` or `mobileView()` do not exist — the chain is `->on()->mobile()`, `->on()->iPhone14Pro()`, or `->resize(w, h)`. If a method is not shown in this skill, do not invent it.
 - **Do not replace real tests with `--ai`.** This is a verification probe, not a way to skip writing tests. If the behavior is worth a regression guard, write a proper test file.
 - **Do not paper over missing setup.** If a check fails because a factory, seeder, or migration is missing, stop and ask the user to add it. Do not bend `--ai` invocations into fixtures.
 - **Delete screenshots after reviewing them.** They land in the project root and clutter the repo if left behind.
@@ -54,7 +56,7 @@ vendor/bin/pest --ai="\Illuminate\Support\Facades\Mail::fake(); \App\Models\User
 
 ## Frontend and browser verification
 
-Browser features come from `pestphp/pest-plugin-browser`. If `visit()` is undefined, install it first:
+Browser features come from `pestphp/pest-plugin-browser`. Full API reference: https://pestphp.com/docs/browser-testing. If `visit()` is undefined, install it first:
 
 ```bash
 composer require pestphp/pest-plugin-browser --dev
@@ -64,7 +66,11 @@ npx playwright install
 
 Use relative paths in `visit()`. Pest resolves them against the app URL. Always pass a descriptive `filename:` to screenshots so the file is easy to locate (and delete) afterwards. After any Blade, Livewire, CSS, or JS change, reach for these to visually confirm the result.
 
+**`screenshot()`'s first positional argument is `$fullPage` (bool), not the filename.** `screenshot('/tmp/foo.png')` throws `Argument #1 ($fullPage) must be of type bool, string given`. Always pass the filename as a named argument: `screenshot(filename: 'foo')`. You cannot redirect screenshots to an arbitrary path — they always land in the project root with the given filename.
+
 ### Smoke screenshots
+
+Screenshot API reference: https://pestphp.com/docs/browser-testing#screenshot
 
 ```bash
 vendor/bin/pest --ai="visit('/')->screenshot(filename: 'homepage');"
