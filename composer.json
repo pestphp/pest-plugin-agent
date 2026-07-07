@@ -14,7 +14,7 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.5",
+        "php": "^8.4",
         "pestphp/pest": "^5.0.0",
         "pestphp/pest-plugin": "^5.0.0",
         "laravel/pao": "^1.1.2"
