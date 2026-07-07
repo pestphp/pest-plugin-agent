@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Pest\AI;
+namespace Pest\AgentBrowser;
 
 /**
  * @internal

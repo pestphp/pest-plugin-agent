@@ -1,6 +1,8 @@
 <?php
 
-use Pest\AI\TestCodeGenerator;
+declare(strict_types=1);
+
+use Pest\AgentBrowser\TestCodeGenerator;
 
 it('generates a test without uses', function () {
     $generator = new TestCodeGenerator;

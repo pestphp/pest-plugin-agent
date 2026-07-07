@@ -1,6 +1,8 @@
 <?php
 
-use Pest\AI\TestFileGenerator;
+declare(strict_types=1);
+
+use Pest\AgentBrowser\TestFileGenerator;
 
 it('creates a temporary file with generated code', function () {
     $generator = new TestFileGenerator;
