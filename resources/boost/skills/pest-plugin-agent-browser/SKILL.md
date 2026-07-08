@@ -23,7 +23,7 @@ It then runs with the project's normal Pest configuration (Feature and Browser n
 
 ## Critical rules
 
-- **The snippet must be valid PHP, not natural language.** `--agent-browser="visit '/' and check it works"` is a parse error. Translate the user's request into PHP statements (`visit('/')->assertOk();`) before invoking.
+- **The snippet must be valid PHP, not natural language.** `--agent-browser="visit '/' and check it works"` is a parse error. Translate the user's request into PHP statements (`visit('/')->assertSee('Welcome');`) before invoking.
 - **Use `vendor/bin/pest`, never bare `pest`.** The bare command often is not on `PATH` and produces "command not found" instead of a real result.
 - **Fully qualify every class name:** `\App\Models\User`, `\Illuminate\Support\Facades\Mail`, `\App\Notifications\WelcomeNotification`. The generated test has no `use` statements, so unqualified names throw `Class "User" not found`.
 - **Use the documented browser API exactly.** Methods like `onMobile()` or `mobileView()` do not exist — the chain is `->on()->mobile()`, `->on()->iPhone14Pro()`, or `->resize(w, h)`. If a method is not shown in this skill, do not invent it.
@@ -128,7 +128,7 @@ vendor/bin/pest --agent-browser="visit('/contact')->type('email', 'test@example.
 
 #### Debugging a `click()` timeout
 
-If `click()` times out, the click likely succeeded but Pest is waiting for a navigation that didn't happen — for example, a guarded route that bounced you back. Don't reach for a longer wait. Split the chain and inspect where you actually landed:
+If `click()` times out, the clickable element matched by your text or selector was never found or never became actionable within the browser timeout — `click()` auto-waits for the element, it does not wait for a navigation. Don't reach for a longer wait. Split the chain, screenshot, and inspect where you actually are and whether the target exists:
 
 ```bash
 vendor/bin/pest --agent-browser="\$page = visit('/'); \$page->click('Open dashboard'); \$page->screenshot(filename: 'after-click'); dump(\$page->script('location.href'));"
@@ -136,13 +136,15 @@ vendor/bin/pest --agent-browser="\$page = visit('/'); \$page->click('Open dashbo
 
 ### Waiting for SPA / Inertia transitions
 
-For Inertia, Livewire, or other client-rendered transitions, the page may not be ready when the next assertion runs. Use the wait helpers from `HasWaitCapabilities` instead of bare assertions:
+You rarely need an explicit wait. Every page assertion (`assertSee`, `assertPathIs`, `assertPresent`, `assertVisible`, …) **auto-waits** — it retries until the condition holds or the browser timeout elapses. So for Inertia, Livewire, or other client-rendered transitions, just assert the post-transition state directly and let it wait:
 
 ```bash
-vendor/bin/pest --agent-browser="visit('/')->click('Open dashboard')->waitForLocation('/dashboard')->assertSee('Welcome');"
-vendor/bin/pest --agent-browser="visit('/feed')->waitForText('Latest posts')->screenshot(filename: 'feed');"
-vendor/bin/pest --agent-browser="visit('/feed')->waitFor('[data-feed-loaded]')->screenshot(filename: 'feed');"
+vendor/bin/pest --agent-browser="visit('/')->click('Open dashboard')->assertPathIs('/dashboard')->assertSee('Welcome');"
+vendor/bin/pest --agent-browser="visit('/feed')->assertSee('Latest posts')->screenshot(filename: 'feed');"
+vendor/bin/pest --agent-browser="visit('/feed')->assertPresent('[data-feed-loaded]')->screenshot(filename: 'feed');"
 ```
+
+There is no `waitForLocation()` or `waitFor()` on the page, and `waitForText()` is a deprecated alias for `assertSee()` — reach for the auto-waiting assertions instead. If you genuinely need a fixed pause, use `wait($seconds)` with an explicit number (calling `wait()` with no argument blocks for a key press and will hang).
 
 ### Reading values back from the page
 
