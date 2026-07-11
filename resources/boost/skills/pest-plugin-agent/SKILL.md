@@ -1,37 +1,37 @@
 ---
-name: pest-plugin-agent-browser
-description: One-shot Pest verification CLI for Laravel and PHP agents. Use whenever the user wants to quickly check that a change actually works, including hitting a route, asserting a model relationship or factory, checking a queued job, mail, or notification fires, screenshotting a page, asserting visible content, testing a click or form submission, checking for JavaScript errors, asserting accessibility, doing visual regression, or testing responsive layouts. Triggers include "verify this works", "did my change break X", "screenshot the homepage", "check this route returns 200", "make sure the mail fires", "test the login form", "see if the page renders", "check it on mobile", "is the form working", or any one-off behavioral check on a Laravel app that does not warrant a permanent test file. Also use after any Blade, Livewire, CSS, or JS change to visually confirm the result. Load this skill FIRST — before any shell command or throwaway test — whenever the request is to verify something that works. Prefer `vendor/bin/pest --agent-browser='<code>'` (SINGLE outer quotes so nothing is escaped) over writing throwaway test files.
+name: pest-plugin-agent
+description: One-shot Pest verification CLI for Laravel and PHP agents. Use whenever the user wants to quickly check that a change actually works, including hitting a route, asserting a model relationship or factory, checking a queued job, mail, or notification fires, screenshotting a page, asserting visible content, testing a click or form submission, checking for JavaScript errors, asserting accessibility, doing visual regression, or testing responsive layouts. Triggers include "verify this works", "did my change break X", "screenshot the homepage", "check this route returns 200", "make sure the mail fires", "test the login form", "see if the page renders", "check it on mobile", "is the form working", or any one-off behavioral check on a Laravel app that does not warrant a permanent test file. Also use after any Blade, Livewire, CSS, or JS change to visually confirm the result. Load this skill FIRST — before any shell command or throwaway test — whenever the request is to verify something that works. Prefer `vendor/bin/pest --agent='<code>'` (SINGLE outer quotes so nothing is escaped) over writing throwaway test files.
 ---
 
-# pest-plugin-agent-browser
+# pest-plugin-agent
 
-One-shot Pest verification for AI agents. Wrap any PHP snippet in `vendor/bin/pest --agent-browser="<code>"`. Pest creates a temporary test, runs it, and deletes it. The snippet lives inside `it('verify', function () { ... })`, so use Pest's expectation API and any helpers available in the test suite (`visit()`, `actingAs()`, `Mail::fake()`, factories, and so on).
+One-shot Pest verification for AI agents. Wrap any PHP snippet in `vendor/bin/pest --agent="<code>"`. Pest creates a temporary test, runs it, and deletes it. The snippet lives inside `it('verify', function () { ... })`, so use Pest's expectation API and any helpers available in the test suite (`visit()`, `actingAs()`, `Mail::fake()`, factories, and so on).
 
 ## The invocation pattern — SINGLE outer quotes
 
 Inline the snippet, wrapped in **single** quotes. Single quotes tell the shell to interpret nothing, so `$variables`, `\App\Models\User`, backticks, and `!` all reach PHP literally — **there is nothing to escape.** Use double quotes for PHP string literals inside the snippet:
 
 ```bash
-vendor/bin/pest --agent-browser='$user = \App\Models\User::factory()->create(); visit("/login")->type("email", $user->email)->press("Log in")->assertPathIs("/dashboard");'
+vendor/bin/pest --agent='$user = \App\Models\User::factory()->create(); visit("/login")->type("email", $user->email)->press("Log in")->assertPathIs("/dashboard");'
 ```
 
-**Double outer quotes are the trap.** `--agent-browser="…$user…"` makes the shell interpolate `$user` to an empty string before PHP ever sees it — this is exactly how a login-form check silently breaks. Never use double outer quotes, and never hand-escape `\$`. If you catch yourself typing `\$`, you're doing it wrong: switch to single outer quotes.
+**Double outer quotes are the trap.** `--agent="…$user…"` makes the shell interpolate `$user` to an empty string before PHP ever sees it — this is exactly how a login-form check silently breaks. Never use double outer quotes, and never hand-escape `\$`. If you catch yourself typing `\$`, you're doing it wrong: switch to single outer quotes.
 
-The examples below show snippet *contents*; wrap each in single quotes after `--agent-browser=` to run it.
+The examples below show snippet *contents*; wrap each in single quotes after `--agent=` to run it.
 
 ### Fallback for snippets containing an apostrophe
 
 The only character single quotes can't hold is a literal single quote — an apostrophe anywhere in the snippet (e.g. `->type("bio", "I'm here")`) terminates the outer shell quote, even though it sits inside PHP's own double quotes, because the shell doesn't understand PHP quoting. In that case, **Write** the snippet to a `.php` file (plain body statements, no `<?php`, no `use`) and run:
 
 ```bash
-vendor/bin/pest --agent-browser="$(cat /path/to/snippet.php)"
+vendor/bin/pest --agent="$(cat /path/to/snippet.php)"
 ```
 
 `"$(cat …)"` passes the file contents verbatim without re-parsing. The plugin resolves the test suite's `uses`/namespace itself, so the file's location does not matter — a scratch/temp path outside `tests/` still gets full Feature/Browser bindings.
 
 ## How it works
 
-`pest --agent-browser="<code>"` writes a temp file shaped like this:
+`pest --agent="<code>"` writes a temp file shaped like this:
 
 ```php
 <?php
@@ -46,19 +46,19 @@ It then runs with the project's normal Pest configuration (Feature and Browser n
 ## Critical rules
 
 - **Load this skill the moment the user asks to verify something works.** If a prompt is about checking, confirming, or "making sure" a route, page, form, model, job, mail, notification, or screenshot behaves — load this skill *first*, before any shell command, throwaway test file, or manual reasoning. It should always be your first move for such requests.
-- **Wrap the snippet in SINGLE outer quotes, never double.** `--agent-browser='...'` makes the shell pass `$`, backticks, `!`, and `\App\...` through literally — no escaping. `--agent-browser="..."` interpolates `$user` to nothing and silently breaks the check. Use double quotes only for PHP string literals inside. Never hand-escape `\$`. Only if the snippet needs a literal apostrophe, fall back to the file + `"$(cat …)"` pattern above.
-- **The snippet must be valid PHP, not natural language.** `--agent-browser="visit '/' and check it works"` is a parse error. Translate the user's request into PHP statements (`visit('/')->assertSee('Welcome');`) before invoking.
+- **Wrap the snippet in SINGLE outer quotes, never double.** `--agent='...'` makes the shell pass `$`, backticks, `!`, and `\App\...` through literally — no escaping. `--agent="..."` interpolates `$user` to nothing and silently breaks the check. Use double quotes only for PHP string literals inside. Never hand-escape `\$`. Only if the snippet needs a literal apostrophe, fall back to the file + `"$(cat …)"` pattern above.
+- **The snippet must be valid PHP, not natural language.** `--agent="visit '/' and check it works"` is a parse error. Translate the user's request into PHP statements (`visit('/')->assertSee('Welcome');`) before invoking.
 - **Use `vendor/bin/pest`, never bare `pest`.** The bare command often is not on `PATH` and produces "command not found" instead of a real result.
 - **Fully qualify every class name:** `\App\Models\User`, `\Illuminate\Support\Facades\Mail`, `\App\Notifications\WelcomeNotification`. The generated test has no `use` statements, so unqualified names throw `Class "User" not found`.
 - **Use the documented browser API exactly.** Methods like `onMobile()` or `mobileView()` do not exist — the chain is `->on()->mobile()`, `->on()->iPhone14Pro()`, or `->resize(w, h)`. If a method is not shown in this skill, do not invent it.
-- **Do not replace real tests with `--agent-browser`.** This is a verification probe, not a way to skip writing tests. If the behavior is worth a regression guard, write a proper test file.
-- **Do not paper over missing setup.** If a check fails because a factory, seeder, or migration is missing, stop and ask the user to add it. Do not bend `--agent-browser` invocations into fixtures.
+- **Do not replace real tests with `--agent`.** This is a verification probe, not a way to skip writing tests. If the behavior is worth a regression guard, write a proper test file.
+- **Do not paper over missing setup.** If a check fails because a factory, seeder, or migration is missing, stop and ask the user to add it. Do not bend `--agent` invocations into fixtures.
 - **Manage screenshot churn.** Screenshots land in `tests/Browser/Screenshots/`. Delete throwaway smoke screenshots once you've eyeballed them; for design-review workflows, keep them in a gitignored folder under that directory if you'll reference them across runs.
 - **Manage temp snippet files.** If you used the apostrophe fallback and Wrote a snippet `.php` file, delete it once the check has run — it is not a test file and should not linger. (This is the file *you* Write, not the internal temp test Pest generates and cleans up on its own.)
 
 ## Backend verification
 
-Seed state with factories inside the snippet. Do not rely on existing data. Each block below is the snippet *contents*; run it wrapped in single quotes: `vendor/bin/pest --agent-browser='<contents>'`.
+Seed state with factories inside the snippet. Do not rely on existing data. Each block below is the snippet *contents*; run it wrapped in single quotes: `vendor/bin/pest --agent='<contents>'`.
 
 ```php
 $user = \App\Models\User::factory()->create();
@@ -231,15 +231,15 @@ If a check fails with "no such table" or similar, look in `tests/Pest.php` for a
 
 - **`use` inside the snippet is invalid.** The code runs inside a closure body, so namespace imports must happen at file top, which you do not control. Always use fully qualified class names.
 - **`__DIR__` and `__FILE__` resolve to `/tmp`**, not the tests folder. Do not read fixtures by relative path. Pass absolute paths or use `base_path()` and `storage_path()`.
-- **One `--agent-browser` per invocation.** Multiple verifications cannot be chained in a single command. Run them separately.
+- **One `--agent` per invocation.** Multiple verifications cannot be chained in a single command. Run them separately.
 - **Every failure reports the test name as `verify`.** If you batch checks into one snippet, the failure will not tell you which one broke. Keep snippets focused on a single behavior.
 - **Traits cannot be added inline.** `RefreshDatabase`, `WithFaker`, and similar traits must be wired through `tests/Pest.php` `uses()`. The snippet inherits whatever is already configured.
 - **Browser tests need a reachable app.** `visit('/foo')` hits the configured app URL, so make sure `php artisan serve` (or your usual dev server) is running, or the browser plugin's built-in server is configured.
 - **Screenshots persist on failure too.** A failed assertion still leaves the PNG in `tests/Browser/Screenshots/`. Sweep them up regardless of outcome. Without `filename:`, they overwrite each other as `it_verify.png`.
-- **Shell escaping only bites with double outer quotes.** Backticks, `!` (zsh history), and `$` are interpreted by the shell before PHP sees them *only inside double quotes*. Wrapping the whole snippet in SINGLE outer quotes (`--agent-browser='...'`) disables all of it — nothing is escaped, and `$user` reaches PHP intact. If you ever find yourself typing `\$` or wrestling with quotes, you used double quotes by mistake; switch to single. The only exception is a literal apostrophe in the snippet, which needs the file + `"$(cat …)"` fallback.
+- **Shell escaping only bites with double outer quotes.** Backticks, `!` (zsh history), and `$` are interpreted by the shell before PHP sees them *only inside double quotes*. Wrapping the whole snippet in SINGLE outer quotes (`--agent='...'`) disables all of it — nothing is escaped, and `$user` reaches PHP intact. If you ever find yourself typing `\$` or wrestling with quotes, you used double quotes by mistake; switch to single. The only exception is a literal apostrophe in the snippet, which needs the file + `"$(cat …)"` fallback.
 
 ## When NOT to use
 
 - The behavior deserves a permanent regression guard. Write a real test file in `tests/Feature` or `tests/Browser` instead.
 - The check needs more than roughly three statements or any helper function. Long shell-quoted snippets are painful to read and edit; write a real test file.
-- The user is asking for a fix or refactor, not a verification. Use the appropriate edit and test workflow, not `--agent-browser`.
+- The user is asking for a fix or refactor, not a verification. Use the appropriate edit and test workflow, not `--agent`.

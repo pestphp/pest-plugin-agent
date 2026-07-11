@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Pest\AgentBrowser;
+namespace Pest\Agent;
 
 use Pest\Contracts\Plugins\HandlesArguments;
 use Pest\Contracts\Plugins\Terminable;
@@ -25,7 +25,7 @@ final class Plugin implements HandlesArguments, Terminable
      */
     public function handleArguments(array $arguments): array
     {
-        $code = $this->popArgumentValue('--agent-browser', $arguments);
+        $code = $this->popArgumentValue('--agent', $arguments);
 
         if ($code === null) {
             return $arguments;

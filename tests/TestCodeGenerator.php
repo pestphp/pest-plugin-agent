@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Pest\AgentBrowser\TestCodeGenerator;
+use Pest\Agent\TestCodeGenerator;
 
 it('generates a test without uses', function () {
     $generator = new TestCodeGenerator;
