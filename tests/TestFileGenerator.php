@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 use Pest\Agent\TestFileGenerator;
 
-it('creates a temporary file with generated code', function () {
-    $generator = new TestFileGenerator;
+beforeEach(function () {
+    $this->generator = new TestFileGenerator;
+});
 
-    $path = $generator->generate('expect(true)->toBeTrue();', []);
+afterEach(function () {
+    $this->generator->cleanup();
+});
+
+it('creates a temporary file with generated code', function () {
+    $path = $this->generator->generate('expect(true)->toBeTrue();', []);
 
     expect($path)->toBeFile()
         ->and(file_get_contents($path))->toBe(<<<'PHP'
@@ -18,46 +24,39 @@ it('creates a temporary file with generated code', function () {
         });
 
         PHP);
-
-    $generator->cleanup();
 });
 
 it('creates a file with a unique name per run', function () {
-    $generator = new TestFileGenerator;
-
-    $path1 = $generator->generate('expect(1)->toBe(1);', []);
-    $path2 = $generator->generate('expect(2)->toBe(2);', []);
+    $path1 = $this->generator->generate('expect(1)->toBe(1);', []);
+    $path2 = $this->generator->generate('expect(2)->toBe(2);', []);
 
     expect($path1)->not->toBe($path2);
+});
 
-    @unlink($path1);
-    $generator->cleanup();
+it('removes every generated file on cleanup', function () {
+    $path1 = $this->generator->generate('expect(1)->toBe(1);', []);
+    $path2 = $this->generator->generate('expect(2)->toBe(2);', []);
+
+    $this->generator->cleanup();
+
+    expect($path1)->not->toBeFile()
+        ->and($path2)->not->toBeFile();
 });
 
 it('creates the file in the system temp directory', function () {
-    $generator = new TestFileGenerator;
-
-    $path = $generator->generate('expect(true)->toBeTrue();', []);
+    $path = $this->generator->generate('expect(true)->toBeTrue();', []);
 
     expect($path)->toStartWith(sys_get_temp_dir());
-
-    $generator->cleanup();
 });
 
 it('creates a file with a .php extension', function () {
-    $generator = new TestFileGenerator;
-
-    $path = $generator->generate('expect(true)->toBeTrue();', []);
+    $path = $this->generator->generate('expect(true)->toBeTrue();', []);
 
     expect($path)->toEndWith('.php');
-
-    $generator->cleanup();
 });
 
 it('passes uses to the generated code', function () {
-    $generator = new TestFileGenerator;
-
-    $path = $generator->generate('expect(true)->toBeTrue();', ['App\Models\User']);
+    $path = $this->generator->generate('expect(true)->toBeTrue();', ['App\Models\User']);
 
     expect(file_get_contents($path))->toBe(<<<'PHP'
     <?php
@@ -69,14 +68,10 @@ it('passes uses to the generated code', function () {
     });
 
     PHP);
-
-    $generator->cleanup();
 });
 
 it('passes namespace to the generated code', function () {
-    $generator = new TestFileGenerator;
-
-    $path = $generator->generate('expect(true)->toBeTrue();', [], 'P\Tests\Feature');
+    $path = $this->generator->generate('expect(true)->toBeTrue();', [], 'P\Tests\Feature');
 
     expect(file_get_contents($path))->toBe(<<<'PHP'
     <?php
@@ -85,40 +80,32 @@ it('passes namespace to the generated code', function () {
         expect(true)->toBeTrue();
     });
 
-    \Pest\TestSuite::getInstance()->tests->get(__FILE__)->namespace = 'P\Tests\Feature';
+    if (($testCaseFactory = \Pest\TestSuite::getInstance()->tests->get(__FILE__)) !== null) {
+        $testCaseFactory->namespace = 'P\\Tests\\Feature';
+    }
 
     PHP);
-
-    $generator->cleanup();
 });
 
 it('removes the file on cleanup', function () {
-    $generator = new TestFileGenerator;
-
-    $path = $generator->generate('expect(true)->toBeTrue();', []);
+    $path = $this->generator->generate('expect(true)->toBeTrue();', []);
 
     expect($path)->toBeFile();
 
-    $generator->cleanup();
+    $this->generator->cleanup();
 
     expect($path)->not->toBeFile();
 });
 
 it('handles cleanup when no file was generated', function () {
-    $generator = new TestFileGenerator;
-
-    $generator->cleanup();
-
-    expect(true)->toBeTrue();
+    expect(fn () => $this->generator->cleanup())->not->toThrow(Exception::class);
 });
 
 it('handles cleanup when file was already deleted', function () {
-    $generator = new TestFileGenerator;
-
-    $path = $generator->generate('expect(true)->toBeTrue();', []);
+    $path = $this->generator->generate('expect(true)->toBeTrue();', []);
     @unlink($path);
 
-    $generator->cleanup();
+    $this->generator->cleanup();
 
     expect($path)->not->toBeFile();
 });

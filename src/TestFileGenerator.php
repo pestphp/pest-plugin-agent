@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Pest\Agent;
 
+use RuntimeException;
+
 /**
  * @internal
  */
 final class TestFileGenerator
 {
-    private ?string $path = null;
+    /**
+     * @var array<int, string>
+     */
+    private array $paths = [];
 
     public function __construct(
         private readonly TestCodeGenerator $codeGenerator = new TestCodeGenerator,
@@ -20,19 +25,25 @@ final class TestFileGenerator
      */
     public function generate(string $code, array $uses, ?string $namespace = null): string
     {
-        $this->path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'.pest_ai_verify_'.bin2hex(random_bytes(8)).'.php';
+        $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'PestAgent'.bin2hex(random_bytes(8)).'.php';
 
-        file_put_contents($this->path, $this->codeGenerator->generate($code, $uses, $namespace));
+        if (@file_put_contents($path, $this->codeGenerator->generate($code, $uses, $namespace)) === false) {
+            throw new RuntimeException(sprintf('Unable to write the temporary test file [%s].', $path));
+        }
 
-        return $this->path;
+        $this->paths[] = $path;
+
+        return $path;
     }
 
     public function cleanup(): void
     {
-        if ($this->path !== null && file_exists($this->path)) {
-            @unlink($this->path);
+        foreach ($this->paths as $path) {
+            if (file_exists($path)) {
+                @unlink($path);
+            }
         }
 
-        $this->path = null;
+        $this->paths = [];
     }
 }

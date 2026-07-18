@@ -69,15 +69,6 @@ it('generates a test with multiline code', function () {
     PHP);
 });
 
-it('treats an empty uses array the same as no uses', function () {
-    $generator = new TestCodeGenerator;
-
-    $withEmpty = $generator->generate('expect(1)->toBe(1);', []);
-    $withoutUses = $generator->generate('expect(1)->toBe(1);', []);
-
-    expect($withEmpty)->toBe($withoutUses);
-});
-
 it('generates a test with a namespace', function () {
     $generator = new TestCodeGenerator;
 
@@ -90,7 +81,9 @@ it('generates a test with a namespace', function () {
         expect(true)->toBeTrue();
     });
 
-    \Pest\TestSuite::getInstance()->tests->get(__FILE__)->namespace = 'P\Tests\Feature';
+    if (($testCaseFactory = \Pest\TestSuite::getInstance()->tests->get(__FILE__)) !== null) {
+        $testCaseFactory->namespace = 'P\\Tests\\Feature';
+    }
 
     PHP);
 });
@@ -109,7 +102,9 @@ it('generates a test with uses and a namespace', function () {
         expect(true)->toBeTrue();
     });
 
-    \Pest\TestSuite::getInstance()->tests->get(__FILE__)->namespace = 'P\Tests\Feature';
+    if (($testCaseFactory = \Pest\TestSuite::getInstance()->tests->get(__FILE__)) !== null) {
+        $testCaseFactory->namespace = 'P\\Tests\\Feature';
+    }
 
     PHP);
 });

@@ -9,8 +9,7 @@
         "test",
         "testing",
         "plugin",
-        "agent",
-        "browser"
+        "agent"
     ],
     "license": "MIT",
     "require": {

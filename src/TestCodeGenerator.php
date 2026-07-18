@@ -23,7 +23,7 @@ final class TestCodeGenerator
         $contents .= "it('verify', function () {\n    ".$code."\n});\n";
 
         if ($namespace !== null) {
-            $contents .= "\n\\Pest\\TestSuite::getInstance()->tests->get(__FILE__)->namespace = '".$namespace."';\n";
+            $contents .= "\nif ((\$testCaseFactory = \\Pest\\TestSuite::getInstance()->tests->get(__FILE__)) !== null) {\n    \$testCaseFactory->namespace = ".var_export($namespace, true).";\n}\n";
         }
 
         return $contents;
