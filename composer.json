@@ -30,6 +30,9 @@
         "pestphp/pest-plugin-browser": "^5.0.0",
         "pestphp/pest-plugin-type-coverage": "^5.0.0"
     },
+    "conflict": {
+        "pestphp/pest": "<5.0.0"
+    },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
