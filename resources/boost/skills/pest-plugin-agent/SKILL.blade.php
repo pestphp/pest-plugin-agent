@@ -1,18 +1,18 @@
 ---
 name: pest-plugin-agent
-description: One-shot Pest verification CLI for Laravel and PHP agents. Use whenever the user wants to quickly check that a change actually works, including hitting a route, asserting a model relationship or factory, checking a queued job, mail, or notification fires, screenshotting a page, asserting visible content, testing a click or form submission, checking for JavaScript errors, asserting accessibility, doing visual regression, or testing responsive layouts. Triggers include "verify this works", "did my change break X", "screenshot the homepage", "check this route returns 200", "make sure the mail fires", "test the login form", "see if the page renders", "check it on mobile", "is the form working", or any one-off behavioral check on a Laravel app that does not warrant a permanent test file. Also use after any Blade, Livewire, CSS, or JS change to visually confirm the result. Load this skill FIRST — before any shell command or throwaway test — whenever the request is to verify something that works. Prefer `vendor/bin/pest --agent='<code>'` (SINGLE outer quotes so nothing is escaped) over writing throwaway test files.
+description: One-shot Pest verification CLI for Laravel and PHP agents. Use whenever the user wants to quickly check that a change actually works, including hitting a route, asserting a model relationship or factory, checking a queued job, mail, or notification fires, screenshotting a page, asserting visible content, testing a click or form submission, checking for JavaScript errors, asserting accessibility, doing visual regression, or testing responsive layouts. Triggers include "verify this works", "did my change break X", "screenshot the homepage", "check this route returns 200", "make sure the mail fires", "test the login form", "see if the page renders", "check it on mobile", "is the form working", or any one-off behavioral check on a Laravel app that does not warrant a permanent test file. Also use after any Blade, Livewire, CSS, or JS change to visually confirm the result. Load this skill FIRST — before any shell command or throwaway test — whenever the request is to verify something that works. Prefer `{{ $assist->binCommand('pest') }} --agent='<code>'` (SINGLE outer quotes so nothing is escaped) over writing throwaway test files.
 ---
 
 # pest-plugin-agent
 
-One-shot Pest verification for AI agents. Wrap any PHP snippet in `vendor/bin/pest --agent="<code>"`. Pest creates a temporary test, runs it, and deletes it. The snippet lives inside `it('verify', function () { ... })`, so use Pest's expectation API and any helpers available in the test suite (`visit()`, `actingAs()`, `Mail::fake()`, factories, and so on).
+One-shot Pest verification for AI agents. Wrap any PHP snippet in `{{ $assist->binCommand('pest') }} --agent="<code>"`. Pest creates a temporary test, runs it, and deletes it. The snippet lives inside `it('verify', function () { ... })`, so use Pest's expectation API and any helpers available in the test suite (`visit()`, `actingAs()`, `Mail::fake()`, factories, and so on).
 
 ## The invocation pattern — SINGLE outer quotes
 
 Inline the snippet, wrapped in **single** quotes. Single quotes tell the shell to interpret nothing, so `$variables`, `\App\Models\User`, backticks, and `!` all reach PHP literally — **there is nothing to escape.** Use double quotes for PHP string literals inside the snippet:
 
 ```bash
-vendor/bin/pest --agent='$user = \App\Models\User::factory()->create(); visit("/login")->type("email", $user->email)->press("Log in")->assertPathIs("/dashboard");'
+{{ $assist->binCommand('pest') }} --agent='$user = \App\Models\User::factory()->create(); visit("/login")->type("email", $user->email)->press("Log in")->assertPathIs("/dashboard");'
 ```
 
 **Double outer quotes are the trap.** `--agent="…$user…"` makes the shell interpolate `$user` to an empty string before PHP ever sees it — this is exactly how a login-form check silently breaks. Never use double outer quotes, and never hand-escape `\$`. If you catch yourself typing `\$`, you're doing it wrong: switch to single outer quotes.
@@ -24,7 +24,7 @@ The examples below show snippet *contents*; wrap each in single quotes after `--
 The only character single quotes can't hold is a literal single quote — an apostrophe anywhere in the snippet (e.g. `->type("bio", "I'm here")`) terminates the outer shell quote, even though it sits inside PHP's own double quotes, because the shell doesn't understand PHP quoting. In that case, **Write** the snippet to a `.php` file (plain body statements, no `<?php`, no `use`) and run:
 
 ```bash
-vendor/bin/pest --agent="$(cat /path/to/snippet.php)"
+{{ $assist->binCommand('pest') }} --agent="$(cat /path/to/snippet.php)"
 ```
 
 `"$(cat …)"` passes the file contents verbatim without re-parsing. The plugin resolves the test suite's `uses`/namespace itself, so the file's location does not matter — a scratch/temp path outside `tests/` still gets full Feature/Browser bindings.
@@ -48,7 +48,7 @@ It then runs with the project's normal Pest configuration (Feature and Browser n
 - **Load this skill the moment the user asks to verify something works.** If a prompt is about checking, confirming, or "making sure" a route, page, form, model, job, mail, notification, or screenshot behaves — load this skill *first*, before any shell command, throwaway test file, or manual reasoning. It should always be your first move for such requests.
 - **Wrap the snippet in SINGLE outer quotes, never double.** `--agent='...'` makes the shell pass `$`, backticks, `!`, and `\App\...` through literally — no escaping. `--agent="..."` interpolates `$user` to nothing and silently breaks the check. Use double quotes only for PHP string literals inside. Never hand-escape `\$`. Only if the snippet needs a literal apostrophe, fall back to the file + `"$(cat …)"` pattern above.
 - **The snippet must be valid PHP, not natural language.** `--agent="visit '/' and check it works"` is a parse error. Translate the user's request into PHP statements (`visit('/')->assertSee('Welcome');`) before invoking.
-- **Use `vendor/bin/pest`, never bare `pest`.** The bare command often is not on `PATH` and produces "command not found" instead of a real result.
+- **Use `{{ $assist->binCommand('pest') }}`, never bare `pest`.** The bare command often is not on `PATH` and produces "command not found" instead of a real result.
 - **Fully qualify every class name:** `\App\Models\User`, `\Illuminate\Support\Facades\Mail`, `\App\Notifications\WelcomeNotification`. The generated test has no `use` statements, so unqualified names throw `Class "User" not found`.
 - **Use the documented browser API exactly.** Methods like `onMobile()` or `mobileView()` do not exist — the chain is `->on()->mobile()`, `->on()->iPhone14Pro()`, or `->resize(w, h)`. If a method is not shown in this skill, do not invent it.
 - **Do not replace real tests with `--agent`.** This is a verification probe, not a way to skip writing tests. If the behavior is worth a regression guard, write a proper test file.
@@ -58,7 +58,7 @@ It then runs with the project's normal Pest configuration (Feature and Browser n
 
 ## Backend verification
 
-Seed state with factories inside the snippet. Do not rely on existing data. Each block below is the snippet *contents*; run it wrapped in single quotes: `vendor/bin/pest --agent='<contents>'`.
+Seed state with factories inside the snippet. Do not rely on existing data. Each block below is the snippet *contents*; run it wrapped in single quotes: `{{ $assist->binCommand('pest') }} --agent='<contents>'`.
 
 ```php
 $user = \App\Models\User::factory()->create();
@@ -100,9 +100,9 @@ If the page still looks empty after seeding, the seeder probably isn't writing t
 Browser features come from `pestphp/pest-plugin-browser`. Full API reference: https://pestphp.com/docs/browser-testing. If `visit()` is undefined, install it first:
 
 ```bash
-composer require pestphp/pest-plugin-browser --dev
-npm install playwright@latest
-npx playwright install
+{{ $assist->composerCommand('require pestphp/pest-plugin-browser --dev') }}
+{{ $assist->nodePackageManagerCommand('install playwright@latest') }}
+{{ $assist->config->usesSail ? $assist->sailBinaryPath().' npx' : 'npx' }} playwright install
 ```
 
 Use relative paths in `visit()`. Pest resolves them against the app URL. Always pass a descriptive `filename:` to screenshots so the file is easy to locate afterwards — without it, the file defaults to `it_verify.png` and gets overwritten on every run. After any Blade, Livewire, CSS, or JS change, reach for these to visually confirm the result.
@@ -235,7 +235,11 @@ If a check fails with "no such table" or similar, look in `tests/Pest.php` for a
 - **An empty snippet is an error.** `--agent=` or a whitespace-only value aborts the run with "requires a non-empty PHP code snippet" instead of silently passing. Passing `--agent` with no value at all fails the same way.
 - **Traits cannot be added inline.** `RefreshDatabase`, `WithFaker`, and similar traits must be wired through `tests/Pest.php` `uses()`. The snippet inherits whatever is already configured.
 - **Path-scoped hooks and groups do not carry over.** Classes and traits from `uses(...)->in('Feature')` are re-applied to the generated test, but `beforeEach`/`afterEach` hooks and groups attached via `uses()->beforeEach(...)->in(...)` are bound to the directory path and will not run for agent snippets. If required setup lives in such a hook, inline it at the top of the snippet.
+@if ($assist->config->usesSail)
+- **Browser tests need a reachable app.** The `laravel.test` container serves it, so `{{ $assist->sailBinaryPath() }} up -d` is enough. Do not run `php artisan serve`.
+@else
 - **Browser tests need a reachable app.** `visit('/foo')` hits the configured app URL, so make sure `php artisan serve` (or your usual dev server) is running, or the browser plugin's built-in server is configured.
+@endif
 - **Screenshots persist on failure too.** A failed assertion still leaves the PNG in `tests/Browser/Screenshots/`. Sweep them up regardless of outcome. Without `filename:`, they overwrite each other as `it_verify.png`.
 - **Shell escaping only bites with double outer quotes.** Backticks, `!` (zsh history), and `$` are interpreted by the shell before PHP sees them *only inside double quotes*. Wrapping the whole snippet in SINGLE outer quotes (`--agent='...'`) disables all of it — nothing is escaped, and `$user` reaches PHP intact. If you ever find yourself typing `\$` or wrestling with quotes, you used double quotes by mistake; switch to single. The only exception is a literal apostrophe in the snippet, which needs the file + `"$(cat …)"` fallback.
 
