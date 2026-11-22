@@ -25,10 +25,12 @@ The one thing single quotes can't contain is a literal single quote (an apostrop
 
 Whenever the request can only be answered in a real browser — "does login work", "is the page responsive", "screenshot the homepage", "check the mobile layout", "does the button click through", "are there JS/console errors", or any visual/interaction check — the `visit()` browser API is needed. It comes from a **separate** package, `pestphp/pest-plugin-browser`, which is powered by Playwright.
 
-If `visit()` is undefined (or the package is not installed), **do not install it silently — ask the user for permission first**, since it pulls in Node/Playwright dependencies and downloads browser binaries. Explain that the browser check needs it and confirm before running these commands:
+If `visit()` is undefined, or browser tests fail because Playwright or its browsers are missing, **do not install anything silently — ask the user for permission first**, since it pulls in Node/Playwright dependencies and downloads browser binaries. Explain that the browser check needs it and confirm before running these commands:
 
 ```bash
+@if (! \Composer\InstalledVersions::isInstalled('pestphp/pest-plugin-browser'))
 composer require pestphp/pest-plugin-browser --dev   # the browser plugin (needs Node.js)
+@endif
 npm install playwright@latest                         # Playwright driver
 npx playwright install                                # download the browser binaries
 ```
